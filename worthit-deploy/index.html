@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Worth It? — AI Shopping Gut-Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c26;
+    --border: #2a2a38;
+    --text: #f0eff8;
+    --muted: #6b6a80;
+    --accent: #7c6af7;
+    --accent2: #f7a26a;
+    --worth: #4ade80;
+    --skip: #f87171;
+    --wait: #fbbf24;
+    --worth-bg: rgba(74,222,128,0.08);
+    --skip-bg: rgba(248,113,113,0.08);
+    --wait-bg: rgba(251,191,36,0.08);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Ambient background */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -40%;
+    left: -20%;
+    width: 80vw;
+    height: 80vh;
+    background: radial-gradient(ellipse, rgba(124,106,247,0.12) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -30%;
+    right: -10%;
+    width: 60vw;
+    height: 60vh;
+    background: radial-gradient(ellipse, rgba(247,162,106,0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 0 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    padding: 48px 0 32px;
+    text-align: center;
+  }
+
+  .logo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 6px 16px;
+    margin-bottom: 28px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .logo-badge span { color: var(--accent); }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.4rem, 6vw, 3.8rem);
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+  h1 em {
+    font-style: italic;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 1.05rem;
+    line-height: 1.6;
+    max-width: 480px;
+    margin: 0 auto 40px;
+    font-weight: 300;
+  }
+
+  /* Input card */
+  .input-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px;
+    margin-bottom: 24px;
+    transition: border-color 0.3s;
+  }
+  .input-card:focus-within { border-color: var(--accent); }
+
+  .input-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .url-input-wrap {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  textarea#productUrl {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    resize: vertical;
+    min-height: 52px;
+    max-height: 120px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    line-height: 1.5;
+  }
+  textarea#productUrl::placeholder { color: var(--muted); font-family: 'DM Sans', sans-serif; font-style: italic; }
+  textarea#productUrl:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,106,247,0.12); }
+
+  /* Tabs: URL vs Manual */
+  .input-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 20px;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 9px 0;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .tab-btn.active {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  }
+
+  /* Manual entry fields */
+  .manual-fields {
+    display: none;
+    gap: 14px;
+    flex-direction: column;
+  }
+  .manual-fields.visible { display: flex; }
+
+  .field-row { display: flex; gap: 14px; }
+  .field-group { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .field-group label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+  input[type="text"], input[type="number"], select, textarea.manual-area {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+  }
+  input:focus, select:focus, textarea.manual-area:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(124,106,247,0.12);
+  }
+  select option { background: var(--surface2); }
+
+  textarea.manual-area { resize: vertical; min-height: 80px; line-height: 1.5; }
+
+  /* Context section */
+  .context-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  .context-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .context-title::after {
+    content: 'optional — helps AI personalize verdict';
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+    font-size: 11px;
+    color: rgba(107,106,128,0.6);
+  }
+
+  .context-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .chip-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; display: block; }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--text); }
+  .chip.selected { border-color: var(--accent); background: rgba(124,106,247,0.12); color: var(--text); }
+
+  /* Analyze button */
+  .analyze-btn {
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--accent) 0%, #9b8bf8 100%);
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    margin-top: 20px;
+    letter-spacing: 0.01em;
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .analyze-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .analyze-btn:hover:not(:disabled)::before { opacity: 1; }
+  .analyze-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(124,106,247,0.4); }
+  .analyze-btn:active:not(:disabled) { transform: translateY(0); }
+  .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Loading state */
+  .loading-wrap {
+    display: none;
+    text-align: center;
+    padding: 48px 0;
+  }
+  .loading-wrap.visible { display: block; }
+
+  .loading-orb {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    margin: 0 auto 24px;
+    animation: pulse 1.8s ease-in-out infinite;
+    position: relative;
+  }
+  .loading-orb::after {
+    content: '🔍';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    animation: none;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(124,106,247,0.4); }
+    50% { transform: scale(1.08); box-shadow: 0 0 0 16px rgba(124,106,247,0); }
+  }
+
+  .loading-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 300px;
+    margin: 0 auto;
+  }
+  .loading-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--muted);
+    opacity: 0;
+    transition: opacity 0.4s, background 0.4s;
+  }
+  .loading-step.active { opacity: 1; background: var(--surface2); color: var(--text); }
+  .loading-step.done { opacity: 0.5; }
+  .step-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+  .loading-step.active .step-dot { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  .loading-step.done .step-dot { background: var(--worth); }
+
+  /* Results */
+  #results { display: none; }
+  #results.visible { display: block; }
+
+  /* Verdict banner */
+  .verdict-banner {
+    border-radius: 20px;
+    padding: 32px;
+    margin-bottom: 20px;
+    text-align: center;
+    border: 1px solid;
+    position: relative;
+    overflow: hidden;
+    animation: slideUp 0.5s ease;
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .verdict-banner.worth { background: var(--worth-bg); border-color: rgba(74,222,128,0.3); }
+  .verdict-banner.skip  { background: var(--skip-bg);  border-color: rgba(248,113,113,0.3); }
+  .verdict-banner.wait  { background: var(--wait-bg);  border-color: rgba(251,191,36,0.3); }
+
+  .verdict-emoji { font-size: 52px; display: block; margin-bottom: 12px; }
+
+  .verdict-word {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.8rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+  }
+  .verdict-banner.worth .verdict-word { color: var(--worth); }
+  .verdict-banner.skip  .verdict-word { color: var(--skip); }
+  .verdict-banner.wait  .verdict-word { color: var(--wait); }
+
+  .verdict-reason {
+    font-size: 1.1rem;
+    color: var(--text);
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.5;
+    font-weight: 400;
+  }
+
+  .confidence-bar-wrap {
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .confidence-label { font-size: 11px; color: var(--muted); font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; }
+  .confidence-bar {
+    width: 160px;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .confidence-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
+    width: 0%;
+  }
+  .verdict-banner.worth .confidence-fill { background: var(--worth); }
+  .verdict-banner.skip  .confidence-fill { background: var(--skip); }
+  .verdict-banner.wait  .confidence-fill { background: var(--wait); }
+
+  /* Score cards grid */
+  .scores-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 20px;
+    animation: slideUp 0.5s ease 0.1s both;
+  }
+  @media (max-width: 520px) { .scores-grid { grid-template-columns: 1fr; } }
+
+  .score-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    transition: border-color 0.2s;
+  }
+  .score-card:hover { border-color: var(--accent); }
+
+  .score-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .score-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .score-icon { font-size: 14px; }
+  .score-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .score-value.good { color: var(--worth); }
+  .score-value.bad  { color: var(--skip); }
+  .score-value.mid  { color: var(--wait); }
+
+  .score-bar-bg {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1.4s cubic-bezier(0.4,0,0.2,1);
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+  .score-bar-fill.good { background: var(--worth); }
+  .score-bar-fill.bad  { background: var(--skip); }
+  .score-bar-fill.mid  { background: var(--wait); }
+
+  .score-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* Detail sections */
+  .detail-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 22px 24px;
+    margin-bottom: 14px;
+    animation: slideUp 0.5s ease 0.2s both;
+  }
+
+  .detail-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 520px) { .pros-cons { grid-template-columns: 1fr; } }
+
+  .pros, .cons { display: flex; flex-direction: column; gap: 8px; }
+  .pros-label { font-size: 11px; font-weight: 600; color: var(--worth); margin-bottom: 4px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .cons-label { font-size: 11px; font-weight: 600; color: var(--skip); margin-bottom: 4px; letter-spacing: 0.06em; text-transform: uppercase; }
+
+  .pro-item, .con-item {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.4;
+  }
+  .pro-dot { color: var(--worth); flex-shrink: 0; margin-top: 1px; }
+  .con-dot { color: var(--skip); flex-shrink: 0; margin-top: 1px; }
+
+  /* Cost per use highlight */
+  .cpu-highlight {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface2);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 14px;
+  }
+  .cpu-label { font-size: 13px; color: var(--muted); }
+  .cpu-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent2);
+  }
+  .cpu-sub { font-size: 11px; color: var(--muted); margin-top: 2px; text-align: right; }
+
+  /* Alternatives */
+  .alt-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .alt-chip {
+    padding: 7px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-size: 12px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .alt-chip-price { color: var(--accent2); font-weight: 500; font-family: 'DM Mono', monospace; }
+
+  /* Red flags */
+  .red-flags { display: flex; flex-direction: column; gap: 8px; }
+  .red-flag {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(248,113,113,0.06);
+    border: 1px solid rgba(248,113,113,0.15);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.4;
+  }
+  .flag-icon { color: var(--skip); flex-shrink: 0; }
+
+  .green-flags { display: flex; flex-direction: column; gap: 8px; }
+  .green-flag {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(74,222,128,0.06);
+    border: 1px solid rgba(74,222,128,0.15);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.4;
+  }
+  .gflag-icon { color: var(--worth); flex-shrink: 0; }
+
+  /* Action buttons */
+  .action-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    animation: slideUp 0.5s ease 0.3s both;
+  }
+  .btn-secondary {
+    flex: 1;
+    padding: 13px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: transparent;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-secondary:hover { border-color: var(--accent); background: rgba(124,106,247,0.06); }
+
+  .btn-primary-sm {
+    flex: 1;
+    padding: 13px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent), #9b8bf8);
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary-sm:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(124,106,247,0.35); }
+
+  /* Error */
+  .error-msg {
+    display: none;
+    background: rgba(248,113,113,0.08);
+    border: 1px solid rgba(248,113,113,0.25);
+    border-radius: 12px;
+    padding: 14px 18px;
+    color: var(--skip);
+    font-size: 14px;
+    margin-bottom: 16px;
+  }
+  .error-msg.visible { display: block; }
+
+  /* How it works */
+  .how-section {
+    margin-top: 48px;
+    padding: 32px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+  }
+  .how-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+    text-align: center;
+  }
+  .how-steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    text-align: center;
+  }
+  @media (max-width: 540px) { .how-steps { grid-template-columns: 1fr; } }
+  .how-step-num {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0 auto 12px;
+    color: white;
+  }
+  .how-step-title { font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+  .how-step-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  footer {
+    text-align: center;
+    padding: 40px 0 32px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+
+  /* Divider */
+  .or-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 18px 0;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .or-divider::before, .or-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .price-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(251,191,36,0.12);
+    border: 1px solid rgba(251,191,36,0.25);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 11px;
+    color: var(--wait);
+    font-weight: 500;
+  }
+
+  .scroll-hint {
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    animation: bounce 2s ease infinite;
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(4px); }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo-badge">✦ <span>AI-Powered</span> Shopping Intelligence</div>
+    <h1>Is This <em>Worth It?</em></h1>
+    <p class="subtitle">Paste any product URL or describe what you're buying. Get an instant AI verdict: Worth It, Skip It, or Wait.</p>
+  </header>
+
+  <!-- Input Card -->
+  <div class="input-card">
+    <div class="input-tabs">
+      <button class="tab-btn active" onclick="switchTab('url')">🔗 Paste URL</button>
+      <button class="tab-btn" onclick="switchTab('manual')">✏️ Describe It</button>
+    </div>
+
+    <!-- URL Tab -->
+    <div id="urlTab">
+      <label class="input-label">Product URL</label>
+      <div class="url-input-wrap">
+        <textarea id="productUrl" placeholder="Paste Amazon, Target, any store URL here...&#10;e.g. amazon.com/dp/B09ABC123..." rows="2"></textarea>
+      </div>
+    </div>
+
+    <!-- Manual Tab -->
+    <div id="manualTab" class="manual-fields">
+      <div class="field-row">
+        <div class="field-group">
+          <label>Product Name</label>
+          <input type="text" id="productName" placeholder="e.g. Dyson V15 Vacuum">
+        </div>
+        <div class="field-group">
+          <label>Price ($)</label>
+          <input type="number" id="productPrice" placeholder="e.g. 299">
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Category</label>
+        <select id="productCategory">
+          <option value="">Select category...</option>
+          <option>Electronics & Tech</option>
+          <option>Clothing & Fashion</option>
+          <option>Home & Kitchen</option>
+          <option>Fitness & Sports</option>
+          <option>Beauty & Personal Care</option>
+          <option>Books & Education</option>
+          <option>Food & Grocery</option>
+          <option>Furniture & Decor</option>
+          <option>Tools & Hardware</option>
+          <option>Toys & Games</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Why are you considering this?</label>
+        <textarea class="manual-area" id="productReason" placeholder="e.g. My old vacuum broke, I see this one on sale, I've been wanting it for 3 months..."></textarea>
+      </div>
+    </div>
+
+    <!-- Context Section -->
+    <div class="context-section">
+      <div class="context-title">Your context</div>
+
+      <div class="chip-label">How often would you actually use this?</div>
+      <div class="context-chips" id="usageChips">
+        <button class="chip" onclick="toggleChip(this, 'usage')">📅 Daily</button>
+        <button class="chip" onclick="toggleChip(this, 'usage')">📆 Weekly</button>
+        <button class="chip" onclick="toggleChip(this, 'usage')">🗓 Monthly</button>
+        <button class="chip" onclick="toggleChip(this, 'usage')">🎲 Occasionally</button>
+        <button class="chip" onclick="toggleChip(this, 'usage')">❓ Not sure</button>
+      </div>
+
+      <div class="chip-label">Your current financial vibe:</div>
+      <div class="context-chips" id="budgetChips">
+        <button class="chip" onclick="toggleChip(this, 'budget')">💚 Comfortable</button>
+        <button class="chip" onclick="toggleChip(this, 'budget')">🟡 Watching it</button>
+        <button class="chip" onclick="toggleChip(this, 'budget')">🔴 Tight right now</button>
+      </div>
+
+      <div class="chip-label">Have you been thinking about this purchase?</div>
+      <div class="context-chips" id="timeChips">
+        <button class="chip" onclick="toggleChip(this, 'time')">⚡ Just saw it now</button>
+        <button class="chip" onclick="toggleChip(this, 'time')">🕐 A few days</button>
+        <button class="chip" onclick="toggleChip(this, 'time')">📆 Weeks</button>
+        <button class="chip" onclick="toggleChip(this, 'time')">🎯 Months</button>
+      </div>
+    </div>
+
+    <div class="error-msg" id="errorMsg">⚠️ Please enter a product URL or fill in the product details above.</div>
+
+    <button class="analyze-btn" onclick="analyzeProduct()">
+      ✦ Analyze This Purchase
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-wrap" id="loadingWrap">
+    <div class="loading-orb"></div>
+    <p style="color:var(--muted); font-size:13px; margin-bottom:20px; letter-spacing:0.05em; text-transform:uppercase; font-weight:500;">Analyzing purchase...</p>
+    <div class="loading-steps">
+      <div class="loading-step" id="step1"><div class="step-dot"></div>Extracting product details</div>
+      <div class="loading-step" id="step2"><div class="step-dot"></div>Analyzing price & value</div>
+      <div class="loading-step" id="step3"><div class="step-dot"></div>Checking review sentiment</div>
+      <div class="loading-step" id="step4"><div class="step-dot"></div>Calculating cost-per-use</div>
+      <div class="loading-step" id="step5"><div class="step-dot"></div>Generating your verdict</div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div id="results">
+    <div class="verdict-banner" id="verdictBanner">
+      <span class="verdict-emoji" id="verdictEmoji"></span>
+      <div class="verdict-word" id="verdictWord"></div>
+      <div class="verdict-reason" id="verdictReason"></div>
+      <div class="confidence-bar-wrap">
+        <span class="confidence-label">Confidence</span>
+        <div class="confidence-bar"><div class="confidence-fill" id="confidenceFill"></div></div>
+        <span class="confidence-label" id="confidenceText"></span>
+      </div>
+    </div>
+
+    <!-- Score Cards -->
+    <div class="scores-grid" id="scoresGrid"></div>
+
+    <!-- Cost Per Use -->
+    <div class="detail-card" id="cpuCard">
+      <div class="detail-title">💰 Cost Per Use Analysis</div>
+      <div class="cpu-highlight">
+        <div>
+          <div class="cpu-label">Estimated cost per use</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px" id="cpuBasis"></div>
+        </div>
+        <div style="text-align:right">
+          <div class="cpu-value" id="cpuValue"></div>
+          <div class="cpu-sub" id="cpuVerdict"></div>
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--muted);line-height:1.6" id="cpuExplain"></p>
+    </div>
+
+    <!-- Pros & Cons -->
+    <div class="detail-card" id="prosConsCard">
+      <div class="detail-title">⚖️ Buy vs. Skip Breakdown</div>
+      <div class="pros-cons">
+        <div class="pros">
+          <div class="pros-label">✓ Reasons to buy</div>
+          <div id="prosList"></div>
+        </div>
+        <div class="cons">
+          <div class="cons-label">✗ Reasons to skip</div>
+          <div id="consList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Red/Green Flags -->
+    <div class="detail-card" id="flagsCard">
+      <div class="detail-title" id="flagsTitle"></div>
+      <div id="flagsList"></div>
+    </div>
+
+    <!-- Alternatives -->
+    <div class="detail-card" id="altsCard">
+      <div class="detail-title">🔄 Consider Instead</div>
+      <div class="alt-chips" id="altsList"></div>
+    </div>
+
+    <!-- Actions -->
+    <div class="action-row">
+      <button class="btn-secondary" onclick="resetApp()">← Analyze Another</button>
+      <button class="btn-primary-sm" onclick="shareResult()">Share This Verdict</button>
+    </div>
+  </div>
+
+  <!-- How It Works -->
+  <div class="how-section" id="howSection">
+    <div class="how-title">How it works</div>
+    <div class="how-steps">
+      <div>
+        <div class="how-step-num">1</div>
+        <div class="how-step-title">Paste or Describe</div>
+        <div class="how-step-desc">Drop in any product URL or manually describe what you're considering buying</div>
+      </div>
+      <div>
+        <div class="how-step-num">2</div>
+        <div class="how-step-title">AI Analyzes</div>
+        <div class="how-step-desc">Checks price value, review quality, cost-per-use, and your personal context</div>
+      </div>
+      <div>
+        <div class="how-step-num">3</div>
+        <div class="how-step-title">Get Your Verdict</div>
+        <div class="how-step-desc">Instant WORTH IT, SKIP IT, or WAIT decision with full reasoning breakdown</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Worth It? uses AI to help you make smarter purchase decisions.</p>
+    <p style="margin-top:8px">Built with ✦ and Claude AI · <a href="#">How it works</a> · <a href="#">Privacy</a></p>
+  </footer>
+
+</div>
+
+<script>
+// ── Tab switching ──────────────────────────────────────────
+let currentTab = 'url';
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', (i === 0 && tab === 'url') || (i === 1 && tab === 'manual'));
+  });
+  document.getElementById('urlTab').style.display = tab === 'url' ? 'block' : 'none';
+  document.getElementById('manualTab').classList.toggle('visible', tab === 'manual');
+}
+
+// ── Chip toggle ────────────────────────────────────────────
+function toggleChip(el, group) {
+  document.querySelectorAll(`#${group}Chips .chip`).forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function getChipValue(group) {
+  const sel = document.querySelector(`#${group}Chips .chip.selected`);
+  return sel ? sel.textContent.trim() : null;
+}
+
+// ── Build prompt ───────────────────────────────────────────
+function buildPrompt() {
+  const usage = getChipValue('usage') || 'unknown frequency';
+  const budget = getChipValue('budget') || 'not specified';
+  const time   = getChipValue('time')   || 'not specified';
+
+  let productInfo = '';
+  if (currentTab === 'url') {
+    const url = document.getElementById('productUrl').value.trim();
+    if (!url) return null;
+    productInfo = `Product URL: ${url}`;
+  } else {
+    const name = document.getElementById('productName').value.trim();
+    const price = document.getElementById('productPrice').value.trim();
+    const cat = document.getElementById('productCategory').value;
+    const reason = document.getElementById('productReason').value.trim();
+    if (!name && !reason) return null;
+    productInfo = [
+      name && `Product: ${name}`,
+      price && `Price: $${price}`,
+      cat && `Category: ${cat}`,
+      reason && `Reason for considering: ${reason}`
+    ].filter(Boolean).join('\n');
+  }
+
+  return `You are a brutally honest AI shopping advisor. A user is considering a purchase and needs your verdict.
+
+${productInfo}
+
+User Context:
+- How often they'd use it: ${usage}
+- Financial situation: ${budget}
+- How long they've been thinking about it: ${time}
+
+Analyze this purchase and respond ONLY with valid JSON in this exact structure:
+
+{
+  "verdict": "WORTH IT" | "SKIP IT" | "WAIT",
+  "verdictEmoji": "✅" | "❌" | "⏳",
+  "confidence": 85,
+  "oneLineSummary": "One punchy sentence explaining the verdict (max 20 words)",
+  "scores": {
+    "value": { "score": 72, "label": "Value for Money", "description": "Brief 1-sentence explanation" },
+    "reviewTrust": { "score": 65, "label": "Review Trustworthiness", "description": "Are reviews likely genuine?" },
+    "needScore": { "score": 40, "label": "Actual Need", "description": "Do they really need this?" },
+    "timingScore": { "score": 80, "label": "Buy Timing", "description": "Is now the right time to buy?" }
+  },
+  "costPerUse": {
+    "estimatedUses": 24,
+    "usePeriod": "over 1 year",
+    "costPerUse": "$12.50",
+    "verdict": "reasonable" | "expensive" | "great deal",
+    "explanation": "2-sentence explanation of the cost-per-use math and what it means"
+  },
+  "pros": ["Pro point 1", "Pro point 2", "Pro point 3"],
+  "cons": ["Con point 1", "Con point 2", "Con point 3"],
+  "flags": {
+    "type": "red" | "green" | "mixed",
+    "items": ["Flag 1", "Flag 2", "Flag 3"]
+  },
+  "alternatives": [
+    { "name": "Alternative product name", "note": "Why consider it", "priceHint": "~$XX" },
+    { "name": "Alternative 2", "note": "Why consider it", "priceHint": "~$XX" }
+  ]
+}
+
+Be specific, realistic, and genuinely helpful. Don't be generic. If it's a URL you can't access, make educated guesses based on the URL structure and product type. Respond ONLY with the JSON object, no other text.`;
+}
+
+// ── Loading animation ──────────────────────────────────────
+let stepInterval;
+function startLoadingSteps() {
+  const steps = ['step1','step2','step3','step4','step5'];
+  let i = 0;
+  steps.forEach(s => {
+    const el = document.getElementById(s);
+    el.classList.remove('active','done');
+  });
+  document.getElementById(steps[0]).classList.add('active');
+  i = 0;
+  stepInterval = setInterval(() => {
+    if (i < steps.length - 1) {
+      document.getElementById(steps[i]).classList.remove('active');
+      document.getElementById(steps[i]).classList.add('done');
+      i++;
+      document.getElementById(steps[i]).classList.add('active');
+    }
+  }, 900);
+}
+function stopLoadingSteps() { clearInterval(stepInterval); }
+
+// ── Main analyze function ─────────────────────────────────
+async function analyzeProduct() {
+  const prompt = buildPrompt();
+  if (!prompt) {
+    document.getElementById('errorMsg').classList.add('visible');
+    setTimeout(() => document.getElementById('errorMsg').classList.remove('visible'), 3000);
+    return;
+  }
+
+  // Hide/show sections
+  document.getElementById('errorMsg').classList.remove('visible');
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('results').classList.remove('visible');
+  document.getElementById('howSection').style.display = 'none';
+  document.getElementById('loadingWrap').classList.add('visible');
+  document.querySelector('.analyze-btn').disabled = true;
+
+  startLoadingSteps();
+
+  try {
+    const response = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await response.json();
+    const raw = data.content?.[0]?.text || '';
+
+    let result;
+    try {
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      result = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+    } catch(e) {
+      throw new Error('Could not parse AI response');
+    }
+
+    stopLoadingSteps();
+    document.getElementById('loadingWrap').classList.remove('visible');
+    renderResults(result);
+
+  } catch(err) {
+    stopLoadingSteps();
+    document.getElementById('loadingWrap').classList.remove('visible');
+    document.querySelector('.analyze-btn').disabled = false;
+    document.getElementById('errorMsg').textContent = '⚠️ Analysis failed. Check your connection and try again. (' + err.message + ')';
+    document.getElementById('errorMsg').classList.add('visible');
+    document.getElementById('howSection').style.display = '';
+  }
+}
+
+// ── Render results ─────────────────────────────────────────
+function renderResults(r) {
+  // Verdict banner
+  const banner = document.getElementById('verdictBanner');
+  const verdictClass = r.verdict === 'WORTH IT' ? 'worth' : r.verdict === 'SKIP IT' ? 'skip' : 'wait';
+  banner.className = `verdict-banner ${verdictClass}`;
+
+  document.getElementById('verdictEmoji').textContent = r.verdictEmoji || (verdictClass === 'worth' ? '✅' : verdictClass === 'skip' ? '❌' : '⏳');
+  document.getElementById('verdictWord').textContent = r.verdict;
+  document.getElementById('verdictReason').textContent = r.oneLineSummary;
+  document.getElementById('confidenceText').textContent = (r.confidence || 80) + '%';
+
+  const fill = document.getElementById('confidenceFill');
+  fill.className = `confidence-fill ${verdictClass}`;
+  setTimeout(() => { fill.style.width = (r.confidence || 80) + '%'; }, 300);
+
+  // Score cards
+  const grid = document.getElementById('scoresGrid');
+  grid.innerHTML = '';
+  const scoreEntries = Object.values(r.scores || {});
+  scoreEntries.forEach((s, idx) => {
+    const pct = Math.min(100, Math.max(0, s.score || 50));
+    const colorClass = pct >= 70 ? 'good' : pct >= 40 ? 'mid' : 'bad';
+    grid.innerHTML += `
+      <div class="score-card" style="animation-delay:${0.05*idx}s">
+        <div class="score-header">
+          <div class="score-label">${s.label}</div>
+          <div class="score-value ${colorClass}" id="sv${idx}">${pct}</div>
+        </div>
+        <div class="score-bar-bg"><div class="score-bar-fill ${colorClass}" id="sb${idx}" style="width:0%"></div></div>
+        <div class="score-desc">${s.description}</div>
+      </div>`;
+  });
+  setTimeout(() => {
+    scoreEntries.forEach((s, idx) => {
+      const pct = Math.min(100, Math.max(0, s.score || 50));
+      const el = document.getElementById(`sb${idx}`);
+      if (el) el.style.width = pct + '%';
+    });
+  }, 400);
+
+  // Cost per use
+  const cpu = r.costPerUse || {};
+  document.getElementById('cpuValue').textContent = cpu.costPerUse || 'N/A';
+  document.getElementById('cpuBasis').textContent = `~${cpu.estimatedUses || '?'} uses ${cpu.usePeriod || ''}`;
+  document.getElementById('cpuVerdict').textContent = cpu.verdict || '';
+  document.getElementById('cpuExplain').textContent = cpu.explanation || '';
+
+  // Pros & Cons
+  const prosList = document.getElementById('prosList');
+  prosList.innerHTML = (r.pros || []).map(p => `<div class="pro-item"><span class="pro-dot">✓</span>${p}</div>`).join('');
+  const consList = document.getElementById('consList');
+  consList.innerHTML = (r.cons || []).map(c => `<div class="con-item"><span class="con-dot">✗</span>${c}</div>`).join('');
+
+  // Flags
+  const flags = r.flags || {};
+  const isRed = flags.type === 'red';
+  const flagTitle = document.getElementById('flagsTitle');
+  const flagsList = document.getElementById('flagsList');
+  if (flags.type === 'green') {
+    flagTitle.textContent = '✅ Green Flags';
+    flagsList.innerHTML = `<div class="green-flags">${(flags.items||[]).map(f => `<div class="green-flag"><span class="gflag-icon">✓</span>${f}</div>`).join('')}</div>`;
+  } else if (flags.type === 'red') {
+    flagTitle.textContent = '🚩 Red Flags to Watch';
+    flagsList.innerHTML = `<div class="red-flags">${(flags.items||[]).map(f => `<div class="red-flag"><span class="flag-icon">⚠</span>${f}</div>`).join('')}</div>`;
+  } else {
+    flagTitle.textContent = '⚡ Things to Know';
+    flagsList.innerHTML = `<div class="red-flags">${(flags.items||[]).map(f => `<div class="red-flag"><span class="flag-icon">•</span>${f}</div>`).join('')}</div>`;
+  }
+
+  // Alternatives
+  const altsList = document.getElementById('altsList');
+  altsList.innerHTML = (r.alternatives || []).map(a =>
+    `<div class="alt-chip">🔄 ${a.name} <span class="alt-chip-price">${a.priceHint || ''}</span></div>`
+  ).join('');
+  if (!r.alternatives || r.alternatives.length === 0) {
+    document.getElementById('altsCard').style.display = 'none';
+  }
+
+  // Show results
+  document.getElementById('results').style.display = 'block';
+  setTimeout(() => document.getElementById('results').classList.add('visible'), 10);
+  document.querySelector('.analyze-btn').disabled = false;
+
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── Reset ──────────────────────────────────────────────────
+function resetApp() {
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('results').classList.remove('visible');
+  document.getElementById('howSection').style.display = '';
+  document.getElementById('productUrl').value = '';
+  document.getElementById('productName').value = '';
+  document.getElementById('productPrice').value = '';
+  document.getElementById('productReason').value = '';
+  document.querySelectorAll('.chip.selected').forEach(c => c.classList.remove('selected'));
+  document.getElementById('altsCard').style.display = '';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Share ──────────────────────────────────────────────────
+function shareResult() {
+  const verdict = document.getElementById('verdictWord').textContent;
+  const reason = document.getElementById('verdictReason').textContent;
+  const text = `AI Shopping Verdict: ${verdict}\n"${reason}"\n\nCheck yours at Worth It?`;
+  if (navigator.share) {
+    navigator.share({ title: 'Worth It? Verdict', text });
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(text);
+    alert('Verdict copied to clipboard!');
+  }
+}
+
+// ── Enter key ──────────────────────────────────────────────
+document.getElementById('productUrl').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); analyzeProduct(); }
+});
+</script>
+</body>
+</html>

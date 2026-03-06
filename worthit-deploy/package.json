@@ -1,0 +1,9 @@
+{
+  "name": "worth-it-app",
+  "version": "1.0.0",
+  "description": "Is This Worth It? — AI Shopping Gut-Check Tool",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  }
+}
